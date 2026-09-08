@@ -51,10 +51,5 @@ V2 uses the browser's `localStorage` for tasks, notes, flashcards, theme, best q
 The next major upgrade can add user accounts, cloud synchronization, richer notification scheduling, larger question banks and eventually premium features.
 
 
-## V3 features
-- Student dashboard with XP, levels, streaks and recent quiz scores
-- Daily question with XP rewards
-- Quiz history and achievement badges
-- Browser study reminders
-- Focus-session XP
-- Persistent progress using localStorage
+## V3
+Student dashboard, XP/levels, achievements, quiz history, study progress, reminders, daily focus summary, and enhanced persistence. V3 remains client-side and GitHub Pages compatible.

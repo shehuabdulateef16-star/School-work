@@ -139,7 +139,7 @@ function startTimer() {
   timerRunning = true;
   timerInterval = setInterval(() => {
     if (timerSeconds > 0) { timerSeconds--; updateTimerDisplay(); }
-    else { stopTimer(); if(timerMode === "study") addXP(15); setTimerMode(timerMode === "study" ? "break" : "study"); }
+    else { stopTimer(); setTimerMode(timerMode === "study" ? "break" : "study"); }
   }, 1000);
 }
 startTimerButton?.addEventListener("click", startTimer);
@@ -426,11 +426,6 @@ function finishQuiz(timeUp) {
   const percentage = Math.round((quizScore / quizPool.length) * 100);
   const best = Math.max(getQuizStats(), percentage);
   storage.set("pf-quiz-best", best);
-  const history = storage.get("pf-quiz-history", []);
-  history.unshift({ date: new Date().toISOString(), subject: quizSubject, difficulty: quizDifficulty, score: quizScore, total: quizPool.length, percentage });
-  storage.set("pf-quiz-history", history.slice(0, 30));
-  const xpGain = 25 + (quizScore * 5);
-  addXP(xpGain);
   const streak = updateQuizStreak();
 
   quizGame.classList.add("hidden");
@@ -597,112 +592,6 @@ renderNotes();
 renderFlashcards();
 updateProgressStats();
 
-
-/* V3 — dashboard, daily question, reminders, gamification and richer progress */
-const V3_KEYS = { xp: "pf-xp", achievements: "pf-achievements", reminders: "pf-reminders", daily: "pf-daily-question" };
-function getXP(){ return Number(storage.get(V3_KEYS.xp, 0)) || 0; }
-function levelFromXP(xp){ return Math.floor(xp / 250) + 1; }
-function addXP(amount){
-  const before = levelFromXP(getXP());
-  const next = getXP() + amount;
-  storage.set(V3_KEYS.xp, next);
-  const after = levelFromXP(next);
-  if(after > before) notifyUser(`Level up! You're now Level ${after}.`, "Project Fluid");
-  refreshV3Dashboard();
-}
-function notifyUser(message, title="Project Fluid"){
-  if("Notification" in window && Notification.permission === "granted") new Notification(title,{body:message});
-}
-
-function allQuestions(){ return Object.entries(quizQuestions).flatMap(([subject, qs]) => qs.map(q => ({...q, subject}))); }
-function renderDailyQuestion(){
-  const box=$("#dailyQuestion"); if(!box) return;
-  const today=new Date().toISOString().slice(0,10);
-  let saved=storage.get(V3_KEYS.daily,null);
-  if(!saved || saved.date!==today){
-    const pool=allQuestions(); const q=pool[Math.floor(Math.random()*pool.length)];
-    saved={date:today, question:q, answered:false}; storage.set(V3_KEYS.daily,saved);
-  }
-  box.innerHTML="";
-  const label=document.createElement("span"); label.className="daily-label"; label.textContent=`DAILY QUESTION · ${saved.question.subject.toUpperCase()}`;
-  const title=document.createElement("h3"); title.textContent=saved.question.q;
-  const options=document.createElement("div"); options.className="daily-options";
-  const feedback=document.createElement("p"); feedback.className="daily-feedback";
-  saved.question.o.forEach((opt,i)=>{
-    const b=document.createElement("button"); b.type="button"; b.className="quiz-option"; b.textContent=`${String.fromCharCode(65+i)}. ${opt}`;
-    if(saved.answered){ b.disabled=true; if(i===saved.question.a)b.classList.add("correct"); }
-    b.addEventListener("click",()=>{
-      if(saved.answered)return; saved.answered=true;
-      const correct=i===saved.question.a; storage.set(V3_KEYS.daily,saved); 
-      $$("button",options).forEach(x=>x.disabled=true); $$("button",options)[saved.question.a]?.classList.add("correct"); if(!correct)b.classList.add("wrong");
-      feedback.textContent=correct?`Correct! ${saved.question.e}`:`Not quite. ${saved.question.e}`; feedback.className=`daily-feedback ${correct?"correct":"wrong"}`;
-      if(correct)addXP(10);
-    }); options.appendChild(b);
-  });
-  if(saved.answered) feedback.textContent="You already answered today's question. Come back tomorrow for a new one.";
-  box.append(label,title,options,feedback);
-}
-
-function renderScoreHistory(){
-  const box=$("#scoreHistory"); if(!box)return;
-  const history=storage.get("pf-quiz-history",[]); box.innerHTML="";
-  if(!history.length){box.innerHTML='<p class="muted-copy">Complete a quiz to build your score history.</p>';return;}
-  history.slice(0,6).forEach(h=>{const item=document.createElement("div");item.className="history-item";item.innerHTML=`<strong>${h.percentage}%</strong><span>${h.subject} · ${h.score}/${h.total}</span><small>${new Date(h.date).toLocaleDateString()}</small>`;box.appendChild(item);});
-}
-function getTaskStats(){ const done=tasks.filter(t=>t.done).length; const total=tasks.length; return {done,total}; }
-function refreshV3Dashboard(){
-  const xp=getXP(), level=levelFromXP(xp), next=level*250, previous=(level-1)*250;
-  $("#dashLevel") && ($("#dashLevel").textContent=`Level ${level}`);
-  $("#dashXP") && ($("#dashXP").textContent=`${xp} XP`);
-  $("#xpBar") && ($("#xpBar").style.width=`${Math.min(100,((xp-previous)/(next-previous))*100)}%`);
-  const streak=Number((storage.get("pf-quiz-streak",{})||{}).count)||0; $("#dashStreak")&&($("#dashStreak").textContent=streak);
-  const ts=getTaskStats(); $("#dashTasks")&&($("#dashTasks").textContent=ts.total?`${ts.done}/${ts.total}`:"0");
-  $("#dashBest")&&($("#dashBest").textContent=`${getQuizStats()}%`);
-  $("#dashNotes")&&($("#dashNotes").textContent=notes.length);
-  $("#progressXP")&&($("#progressXP").textContent=xp);
-  $("#progressLevel")&&($("#progressLevel").textContent=level);
-  const badgeCount=storage.get(V3_KEYS.achievements,[]).length; $("#progressBadges")&&($("#progressBadges").textContent=badgeCount);
-  renderScoreHistory();
-}
-function checkAchievements(){
-  const earned=storage.get(V3_KEYS.achievements,[]); const stats=storage.get("pf-quiz-history",[]); const streak=Number((storage.get("pf-quiz-streak",{})||{}).count)||0;
-  const candidates=[
-    ["first-quiz","First Step",stats.length>=1,"Complete your first quiz"],
-    ["perfect","Perfect 10",stats.some(x=>x.percentage===100),"Score 100% on a quiz"],
-    ["five-quizzes","Quiz Runner",stats.length>=5,"Complete five quizzes"],
-    ["streak-7","Week Strong",streak>=7,"Reach a 7-day quiz streak"],
-    ["xp-1000","Scholar",getXP()>=1000,"Earn 1,000 XP"]
-  ];
-  candidates.forEach(([id,name,ok,desc])=>{if(ok&&!earned.some(x=>x.id===id)){earned.push({id,name,desc});notifyUser(`Badge unlocked: ${name}`,"Achievement unlocked");}});
-  storage.set(V3_KEYS.achievements,earned);
-  const list=$("#achievementsList"); if(list){list.innerHTML=""; if(!earned.length)list.innerHTML='<p class="muted-copy">Your first badge is waiting.</p>'; earned.forEach(a=>{const x=document.createElement("div");x.className="achievement-item";x.innerHTML=`<strong>★ ${a.name}</strong><span>${a.desc}</span>`;list.appendChild(x);});}
-  refreshV3Dashboard();
-}
-
-/* Browser reminders: reliable while this page is open. */
-let reminders=storage.get(V3_KEYS.reminders,[]);
-function renderReminders(){
-  const list=$("#reminderList"); if(!list)return; list.innerHTML="";
-  if(!reminders.length){list.innerHTML='<p class="muted-copy">No reminders yet.</p>';return;}
-  reminders.forEach(r=>{const row=document.createElement("div");row.className="reminder-item";row.innerHTML=`<div><strong>${r.title}</strong><span>${r.time}</span></div><button type="button" class="small-btn" data-remove-reminder="${r.id}">Delete</button>`;list.appendChild(row);});
-  $$('[data-remove-reminder]',list).forEach(b=>b.addEventListener("click",()=>{reminders=reminders.filter(r=>String(r.id)!==b.dataset.removeReminder);storage.set(V3_KEYS.reminders,reminders);renderReminders();}));
-}
-const reminderForm=$("#reminderForm");
-reminderForm?.addEventListener("submit",async e=>{e.preventDefault();
-  const title=$("#reminderTitle").value.trim(), time=$("#reminderTime").value; if(!title||!time)return;
-  if("Notification" in window && Notification.permission==="default") await Notification.requestPermission();
-  reminders.push({id:Date.now(),title,time,lastFired:""}); storage.set(V3_KEYS.reminders,reminders); reminderForm.reset(); renderReminders();
-});
-function checkReminders(){
-  const now=new Date(), hhmm=now.toTimeString().slice(0,5), today=now.toISOString().slice(0,10); let changed=false;
-  reminders.forEach(r=>{if(r.time===hhmm && r.lastFired!==today){notifyUser(r.title,"Study reminder");r.lastFired=today;changed=true;}});
-  if(changed)storage.set(V3_KEYS.reminders,reminders);
-}
-
-renderDailyQuestion(); renderReminders(); checkAchievements(); refreshV3Dashboard();
-setInterval(checkReminders,30000);
-console.log("Project Fluid V3 features loaded successfully.");
-
 /* Visual effects */
 const reducedMotion = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
 const blobs = $$(".blob");
@@ -743,3 +632,182 @@ $$('a[href^="#"]').forEach(link => link.addEventListener("click", e => {
 }));
 
 console.log("Project Fluid V2 loaded successfully.");
+
+
+/* ===== Project Fluid V3 enhancement layer ===== */
+(() => {
+  const V3_KEY = "projectFluidV3";
+  const $v3 = (s) => document.querySelector(s);
+  const todayKey = () => new Date().toISOString().slice(0,10);
+
+  const defaults = {
+    xp: 0, studyMinutes: 0, quizHistory: [], achievements: {},
+    planner: [], reminder: {enabled:false,time:"18:00"}, dailyQuestionDate: ""
+  };
+  let data;
+  try { data = {...defaults, ...JSON.parse(localStorage.getItem(V3_KEY) || "{}")}; }
+  catch { data = {...defaults}; }
+  data.quizHistory = Array.isArray(data.quizHistory) ? data.quizHistory : [];
+  data.achievements = data.achievements || {};
+  data.planner = Array.isArray(data.planner) ? data.planner : [];
+  data.reminder = {...defaults.reminder, ...(data.reminder||{})};
+
+  const save = () => localStorage.setItem(V3_KEY, JSON.stringify(data));
+  const level = () => Math.floor(data.xp / 100) + 1;
+  const levelXP = () => data.xp % 100;
+
+  const achievements = [
+    ["first-quiz","🧠","First Step","Complete your first quiz."],
+    ["quiz-5","🎯","Quiz Regular","Complete 5 quizzes."],
+    ["perfect","💯","Perfect Score","Score 100% on a quiz."],
+    ["streak-3","🔥","On Fire","Reach a 3-day quiz streak."],
+    ["study-60","⏱️","Focused","Study for 60 minutes total."],
+    ["xp-500","⭐","Rising Scholar","Earn 500 XP."]
+  ];
+
+  function unlock(id){
+    if (!data.achievements[id]) {
+      data.achievements[id] = Date.now();
+      save();
+      toast("Achievement unlocked! 🏆");
+    }
+  }
+  function updateAchievements(){
+    const q = data.quizHistory;
+    if(q.length >= 1) unlock("first-quiz");
+    if(q.length >= 5) unlock("quiz-5");
+    if(q.some(x => Number(x.score) >= 100)) unlock("perfect");
+    if((window.quizStreak || 0) >= 3 || Number(localStorage.getItem("quizStreak")||0) >= 3) unlock("streak-3");
+    if(data.studyMinutes >= 60) unlock("study-60");
+    if(data.xp >= 500) unlock("xp-500");
+  }
+
+  function renderDashboard(){
+    const xp = $v3("#dashboardXP"); if(!xp) return;
+    const lvl = level(), current = levelXP();
+    const best = data.quizHistory.reduce((a,b) => Number(b.score)>Number(a.score||-1)?b:a, null);
+    $v3("#dashboardLevel").textContent = lvl;
+    $v3("#dashboardLevelText").textContent = `Level ${lvl}`;
+    xp.textContent = data.xp;
+    $v3("#dashboardXPNext").textContent = `${100-current || 100} XP to next level`;
+    $v3("#dashboardStreak").textContent = localStorage.getItem("quizStreak") || "0";
+    $v3("#dashboardMinutes").textContent = data.studyMinutes;
+    $v3("#dashboardBest").textContent = best ? `${best.score}%` : "—";
+    $v3("#dashboardBestSubject").textContent = best?.subject || "No quiz yet";
+    $v3("#dashboardLevelBar").style.width = `${current}%`;
+    $v3("#dashboardProgressText").textContent = `${current} / 100 XP`;
+    $v3("#dashboardMotivation").textContent = data.xp
+      ? `You're at Level ${lvl}. Keep building your study streak.`
+      : "Start a quiz or focus session to earn your first XP.";
+    $v3("#todayDate").textContent = new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    renderTasks();
+    renderAchievementPreview();
+  }
+
+  function renderTasks(){
+    const box=$v3("#todayTasks"); if(!box) return;
+    const today=todayKey();
+    const tasks=data.planner.filter(t => !t.date || t.date===today).slice(0,5);
+    box.innerHTML = tasks.length ? tasks.map(t=>`<div class="mini-task ${t.done?"done":""}"><span>${t.done?"✓":"○"}</span><span>${escapeHTML(t.title)}</span></div>`).join("") : '<p class="empty-state">No study tasks yet. Add one in the planner.</p>';
+  }
+
+  function renderAchievementPreview(){
+    const box=$v3("#achievementPreview"); if(!box) return;
+    box.innerHTML = achievements.map(([id,icon])=>`<div class="achievement-badge ${data.achievements[id]?"":"locked"}" title="${id}">${icon}</div>`).slice(0,6).join("");
+  }
+
+  function renderAchievementModal(){
+    const box=$v3("#achievementList"); if(!box) return;
+    box.innerHTML = achievements.map(([id,icon,name,desc])=>`
+      <div class="achievement-item">
+        <div class="achievement-badge ${data.achievements[id]?"":"locked"}">${icon}</div>
+        <div><strong>${name} ${data.achievements[id]?"✓":""}</strong><p>${desc}</p></div>
+      </div>`).join("");
+  }
+
+  function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+
+  function toast(message){
+    document.body.classList.add("v3-toast-ready");
+    let el=$v3(".toast"); if(!el){el=document.createElement("div");el.className="toast";document.body.appendChild(el);}
+    el.textContent=message; clearTimeout(window.__v3toast); window.__v3toast=setTimeout(()=>el.remove(),2800);
+  }
+
+  function awardXP(amount, reason){
+    data.xp += Number(amount)||0;
+    save(); updateAchievements(); renderDashboard();
+    if(reason) toast(`+${amount} XP — ${reason}`);
+  }
+
+  // Expose helpers so the existing V2 quiz/timer code can award XP without being rewritten.
+  window.projectFluidV3 = {data, save, awardXP, renderDashboard, updateAchievements};
+
+  // Capture quiz completion events from existing buttons/results with a light DOM observer.
+  let lastQuizText="";
+  const observeResults = () => {
+    const result = $v3("#quizResults") || $v3("#quizComplete") || $v3(".quiz-results");
+    if(!result) return;
+    const text=result.textContent.trim();
+    if(text && text!==lastQuizText && /\b\d+\s*\/\s*\d+\b|\b100%\b/.test(text)){
+      lastQuizText=text;
+      const m=text.match(/(\d+)\s*\/\s*(\d+)/);
+      if(m){
+        const score=Math.round(Number(m[1])/Number(m[2])*100);
+        const subject=($v3("#quizSubject")?.value || document.querySelector(".subject-button.active")?.textContent || "Quiz").trim();
+        data.quizHistory.push({score,subject,date:todayKey()});
+        awardXP(25 + (score===100?25:0), "Quiz completed");
+      }
+    }
+  };
+  new MutationObserver(observeResults).observe(document.body,{subtree:true,childList:true,characterData:true});
+
+  // Try to count completed focus sessions from common timer completion text.
+  let timerSeen=false;
+  const observer2=new MutationObserver(()=>{
+    const body=document.body.textContent||"";
+    if(/time'?s up|session complete|focus complete/i.test(body) && !timerSeen){
+      timerSeen=true; data.studyMinutes += 25; awardXP(10,"Focus session");
+      setTimeout(()=>timerSeen=false,4000);
+    }
+  });
+  observer2.observe(document.body,{subtree:true,childList:true,characterData:true});
+
+  // Daily reminder.
+  function reminderStatus(){
+    const el=$v3("#reminderStatus"); if(!el) return;
+    el.textContent=data.reminder.enabled ? `Daily reminder set for ${data.reminder.time}.` : "Reminders are currently off.";
+  }
+  function checkReminder(){
+    if(!data.reminder.enabled) return;
+    const now=new Date();
+    const hhmm=now.toTimeString().slice(0,5);
+    const firedKey=`${todayKey()}-${hhmm}`;
+    if(hhmm===data.reminder.time && localStorage.getItem("lastReminder")!==firedKey){
+      localStorage.setItem("lastReminder",firedKey);
+      if("Notification" in window && Notification.permission==="granted") new Notification("Project Fluid", {body:"Time for your study session 📚"});
+      else toast("📚 Time for your study session!");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    updateAchievements(); renderDashboard(); reminderStatus(); setInterval(checkReminder,30000);
+
+    $v3("#viewAchievements")?.addEventListener("click",()=>{$v3("#achievementsModal").hidden=false;renderAchievementModal()});
+    document.querySelectorAll("[data-close-achievements]").forEach(e=>e.addEventListener("click",()=>{$v3("#achievementsModal").hidden=true}));
+    $v3("#openReminders")?.addEventListener("click",()=>{$v3("#reminderModal").hidden=false; reminderStatus()});
+    document.querySelectorAll("[data-close-reminder]").forEach(e=>e.addEventListener("click",()=>{$v3("#reminderModal").hidden=true}));
+    $v3("#saveReminder")?.addEventListener("click",()=>{
+      data.reminder.enabled=$v3("#reminderEnabled").checked;
+      data.reminder.time=$v3("#reminderTime").value||"18:00";
+      save(); reminderStatus(); toast(data.reminder.enabled?"Reminder saved 🔔":"Reminders turned off");
+    });
+    $v3("#requestNotifications")?.addEventListener("click",async()=>{
+      if(!("Notification" in window)){toast("Notifications aren't supported in this browser.");return;}
+      const permission=await Notification.requestPermission();
+      toast(permission==="granted"?"Notifications enabled 🔔":"Notification permission was not granted.");
+    });
+    document.querySelectorAll("[data-scroll]").forEach(b=>b.addEventListener("click",()=>{
+      document.querySelector(b.dataset.scroll)?.scrollIntoView({behavior:"smooth"});
+    }));
+  });
+})();
