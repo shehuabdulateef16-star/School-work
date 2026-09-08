@@ -53,3 +53,17 @@ The next major upgrade can add user accounts, cloud synchronization, richer noti
 
 ## V3
 Student dashboard, XP/levels, achievements, quiz history, study progress, reminders, daily focus summary, and enhanced persistence. V3 remains client-side and GitHub Pages compatible.
+
+
+## V4 Cloud Accounts
+
+V4 adds Supabase authentication and cloud profile synchronization. The frontend uses the Supabase publishable key only. Never add a secret/service-role key to the browser code.
+
+### V4 setup
+1. Create the Supabase project.
+2. Run the V4 SQL schema supplied with the project setup.
+3. Replace the V3 frontend files with the V4 files.
+4. Enable Email authentication in Supabase Authentication settings.
+5. Test sign-up, email confirmation, login, logout and cloud sync.
+
+Premium subscription payments are intentionally handled separately from the browser so payment status cannot be forged by editing JavaScript.

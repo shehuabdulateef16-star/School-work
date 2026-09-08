@@ -20,6 +20,10 @@
     <nav class="nav-links">
         <a href="#home">Home</a><a href="#tools">Tools</a><a href="#learn">Learn</a><a href="#plan">Plan</a><a href="#progress">Progress</a>
     <a href="#dashboard">Dashboard</a></nav>
+    <div class="account-nav">
+        <button id="accountButton" class="account-button">Sign in</button>
+        <span id="accountStatus" class="account-status" hidden></span>
+    </div>
     <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
 </header>
 
@@ -104,6 +108,44 @@
     </article>
   </div>
 </section>
+
+<div class="modal" id="authModal" hidden>
+  <div class="modal-backdrop" data-close-auth></div>
+  <div class="modal-panel auth-panel">
+    <button class="modal-close" data-close-auth aria-label="Close">×</button>
+    <p class="eyebrow">YOUR ACCOUNT</p>
+    <h2 id="authTitle">Sign in to Project Fluid</h2>
+    <p id="authSubtitle">Sync your progress, planner, notes and quizzes across devices.</p>
+    <form id="authForm" class="auth-form">
+      <label>Email<input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters"></label>
+      <label id="authNameRow" hidden>Name<input id="authName" type="text" autocomplete="name" maxlength="60" placeholder="Your name"></label>
+      <button id="authSubmit" class="full-btn" type="submit">Sign in</button>
+    </form>
+    <button id="authModeToggle" class="text-btn" type="button">Create an account instead</button>
+    <button id="forgotPassword" class="text-btn" type="button">Forgot password?</button>
+    <p id="authMessage" class="helper-text" aria-live="polite"></p>
+  </div>
+</div>
+
+<div class="modal" id="accountModal" hidden>
+  <div class="modal-backdrop" data-close-account></div>
+  <div class="modal-panel">
+    <button class="modal-close" data-close-account aria-label="Close">×</button>
+    <p class="eyebrow">ACCOUNT</p>
+    <h2 id="accountNameDisplay">Student</h2>
+    <p id="accountEmailDisplay"></p>
+    <div class="account-premium-card">
+      <div><span class="stat-label">PLAN</span><strong id="accountPlan">FREE</strong></div>
+      <span id="premiumBadge" class="premium-badge">FREE</span>
+    </div>
+    <div class="account-actions">
+      <button id="syncNow" class="primary-button">☁ Sync now</button>
+      <button id="signOutButton" class="secondary-button">Sign out</button>
+    </div>
+    <p id="syncStatus" class="helper-text"></p>
+  </div>
+</div>
 
 <div class="modal" id="achievementsModal" hidden>
   <div class="modal-backdrop" data-close-achievements></div>
@@ -265,7 +307,7 @@
 
     <div class="planner-grid">
         <div class="planner-card">
-            <div class="card-heading"><div><span class="tool-number">06</span><h3>Study Planner</h3></div><span class="live-badge">SAVED LOCALLY</span></div>
+            <div class="card-heading"><div><span class="tool-number">06</span><h3>Study Planner</h3></div><span class="live-badge" id="storageBadge">LOCAL</span></div>
             <form id="taskForm" class="task-form">
                 <input id="taskInput" type="text" placeholder="Add a study task..." maxlength="100" required>
                 <input id="taskDate" type="date" aria-label="Task due date">
@@ -335,6 +377,7 @@
     <div class="footer-links"><a href="#home">Home</a><a href="#tools">Tools</a><a href="#learn">Learn</a><a href="#plan">Plan</a><a href="about.html">About</a></div>
     <p class="copyright">© 2026 Project Fluid. All rights reserved.</p>
 </footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -15,6 +15,155 @@ const storage = {
   }
 };
 
+
+/* ============================================
+   V4 CLOUD ACCOUNTS — SUPABASE
+   Uses only the publishable browser key. Never put a secret/service-role key here.
+   ============================================ */
+const SUPABASE_URL = "https://uoyfnjmwjkyuzbgdjyet.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_IrNcxwzixEPQGlykrThsnQ_6ffqGYgU";
+const supabaseClient = (window.supabase && typeof window.supabase.createClient === "function")
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  : null;
+
+const accountButton = $("#accountButton");
+const authModal = $("#authModal");
+const accountModal = $("#accountModal");
+const authForm = $("#authForm");
+const authTitle = $("#authTitle");
+const authSubtitle = $("#authSubtitle");
+const authSubmit = $("#authSubmit");
+const authModeToggle = $("#authModeToggle");
+const forgotPassword = $("#forgotPassword");
+const authNameRow = $("#authNameRow");
+const authMessage = $("#authMessage");
+const accountStatus = $("#accountStatus");
+const storageBadge = $("#storageBadge");
+let authMode = "signin";
+let currentUser = null;
+
+function setAuthMessage(message, error=false){ if(authMessage){ authMessage.textContent=message; authMessage.style.color=error?"var(--danger)":""; } }
+function openModal(el){ if(el) el.hidden=false; }
+function closeModal(el){ if(el) el.hidden=true; }
+function setAuthMode(mode){
+  authMode=mode;
+  const signup=mode==="signup";
+  if(authTitle) authTitle.textContent=signup?"Create your Project Fluid account":"Sign in to Project Fluid";
+  if(authSubtitle) authSubtitle.textContent=signup?"Save your study life to the cloud and use it on any device.":"Sync your progress, planner, notes and quizzes across devices.";
+  if(authSubmit) authSubmit.textContent=signup?"Create account":"Sign in";
+  if(authModeToggle) authModeToggle.textContent=signup?"I already have an account":"Create an account instead";
+  if(forgotPassword) forgotPassword.hidden=signup;
+  if(authNameRow) authNameRow.hidden=!signup;
+  setAuthMessage("");
+}
+
+async function ensureCloudProfile(user){
+  if(!supabaseClient || !user) return null;
+  const name = user.user_metadata?.display_name || user.user_metadata?.name || user.email?.split("@")[0] || "Student";
+  const {data,error}=await supabaseClient.from("profiles").upsert({
+    id:user.id, display_name:name, updated_at:new Date().toISOString()
+  },{onConflict:"id"}).select().single();
+  if(error){ console.error("Profile sync error",error); return null; }
+  return data;
+}
+
+function applyCloudProfile(profile){
+  if(!profile) return;
+  if(window.projectFluidV3?.data){
+    const d=window.projectFluidV3.data;
+    d.xp=Number(profile.xp)||d.xp||0; d.level=Number(profile.level)||d.level||1;
+    d.streak=Number(profile.streak)||d.streak||0; d.studyMinutes=Number(profile.total_study_minutes)||d.studyMinutes||0;
+    d.isPremium=Boolean(profile.is_premium);
+    window.projectFluidV3.save?.(); window.projectFluidV3.renderDashboard?.();
+  }
+  const plan=$("#accountPlan"), badge=$("#premiumBadge");
+  const premium=Boolean(profile.is_premium);
+  if(plan) plan.textContent=premium?"PREMIUM":"FREE";
+  if(badge){badge.textContent=premium?"💎 PREMIUM":"FREE";badge.classList.toggle("premium",premium);}
+}
+
+async function syncLocalProfileToCloud(){
+  if(!supabaseClient || !currentUser || !window.projectFluidV3?.data) return;
+  const d=window.projectFluidV3.data;
+  const {error}=await supabaseClient.from("profiles").upsert({
+    id:currentUser.id, xp:Number(d.xp)||0, level:Number(d.level)||1, streak:Number(d.streak)||0,
+    total_study_minutes:Number(d.studyMinutes)||0, updated_at:new Date().toISOString()
+  },{onConflict:"id"});
+  if(error) throw error;
+  if($("#syncStatus")) $("#syncStatus").textContent="Cloud sync complete ✓";
+  storageBadge?.classList.add("cloud-synced"); if(storageBadge) storageBadge.textContent="CLOUD SYNCED";
+}
+
+async function handleSignedIn(user){
+  currentUser=user;
+  const profile=await ensureCloudProfile(user);
+  applyCloudProfile(profile);
+  if(accountButton) accountButton.textContent="Account";
+  if(accountStatus){accountStatus.hidden=false;accountStatus.textContent=user.email||"Signed in";}
+  closeModal(authModal);
+  if($("#accountNameDisplay")) $("#accountNameDisplay").textContent=profile?.display_name || user.user_metadata?.display_name || "Student";
+  if($("#accountEmailDisplay")) $("#accountEmailDisplay").textContent=user.email||"";
+  if($("#syncStatus")) $("#syncStatus").textContent="Your account is connected.";
+  try{ await syncLocalProfileToCloud(); }catch(e){ console.error(e); }
+}
+
+async function initV4Auth(){
+  if(!supabaseClient){ setAuthMessage("Account system could not load. Check your internet connection.",true); return; }
+  const {data}=await supabaseClient.auth.getSession();
+  if(data.session) await handleSignedIn(data.session.user);
+  supabaseClient.auth.onAuthStateChange(async (_event,session)=>{
+    if(session) await handleSignedIn(session.user);
+    else {
+      currentUser=null;
+      if(accountButton) accountButton.textContent="Sign in";
+      if(accountStatus) accountStatus.hidden=true;
+      if(storageBadge){storageBadge.textContent="LOCAL";storageBadge.classList.remove("cloud-synced");}
+    }
+  });
+}
+
+accountButton?.addEventListener("click",()=> currentUser ? openModal(accountModal) : openModal(authModal));
+$("[data-close-auth]")?.addEventListener("click",()=>closeModal(authModal));
+$("[data-close-account]")?.addEventListener("click",()=>closeModal(accountModal));
+authModeToggle?.addEventListener("click",()=>setAuthMode(authMode==="signin"?"signup":"signin"));
+
+authForm?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!supabaseClient){setAuthMessage("Account system is unavailable.",true);return;}
+  authSubmit.disabled=true; setAuthMessage("Please wait…");
+  const email=$("#authEmail")?.value.trim(); const password=$("#authPassword")?.value; const name=$("#authName")?.value.trim();
+  try{
+    if(authMode==="signup"){
+      const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{display_name:name||email.split("@")[0]}}});
+      if(error) throw error;
+      if(data.session) await handleSignedIn(data.user);
+      else setAuthMessage("Account created. Check your email to confirm your account, then sign in.");
+    }else{
+      const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+      if(error) throw error; await handleSignedIn(data.user);
+    }
+  }catch(err){ setAuthMessage(err.message||"Something went wrong.",true); }
+  finally{authSubmit.disabled=false;}
+});
+
+forgotPassword?.addEventListener("click",async()=>{
+  if(!supabaseClient) return; const email=$("#authEmail")?.value.trim();
+  if(!email){setAuthMessage("Enter your email first.",true);return;}
+  try{
+    const redirect=window.location.origin+window.location.pathname;
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:redirect});
+    if(error) throw error; setAuthMessage("Password reset email sent. Check your inbox.");
+  }catch(err){setAuthMessage(err.message||"Could not send reset email.",true);}
+});
+
+$("#signOutButton")?.addEventListener("click",async()=>{
+  if(!supabaseClient) return; await supabaseClient.auth.signOut(); closeModal(accountModal);
+});
+$("#syncNow")?.addEventListener("click",async()=>{
+  try{await syncLocalProfileToCloud();}catch(err){if($("#syncStatus")) $("#syncStatus").textContent="Sync failed. Please try again.";}
+});
+setAuthMode("signin");
+
 /* Theme */
 const themeToggle = $("#themeToggle");
 const savedTheme = localStorage.getItem("project-fluid-theme");
@@ -796,4 +945,35 @@ console.log("Project Fluid V2 loaded successfully.");
       document.querySelector(b.dataset.scroll)?.scrollIntoView({behavior:"smooth"});
     }));
   });
+})();
+
+
+/* V4 cloud history sync: keeps existing local features working while adding cloud copies. */
+(function setupV4CloudHistory(){
+  const originalRecordQuiz=window.projectFluidV3?.recordQuiz;
+  const originalRecordStudy=window.projectFluidV3?.recordStudy;
+  if(originalRecordQuiz && window.projectFluidV3){
+    window.projectFluidV3.recordQuiz=async function(score,subject){
+      originalRecordQuiz(score,subject);
+      if(!supabaseClient || !currentUser) return;
+      try{
+        const total=10, pct=Math.max(0,Math.min(100,Number(score)||0));
+        const correct=Math.round((pct/100)*total);
+        await supabaseClient.from("quiz_history").insert({user_id:currentUser.id,subject:subject||"Quiz",difficulty:"Mixed",score:correct,total_questions:total,percentage:pct});
+        const d=window.projectFluidV3.data;
+        await supabaseClient.from("profiles").update({xp:Number(d.xp)||0,level:Number(d.level)||1,streak:Number(d.streak)||0,total_study_minutes:Number(d.studyMinutes)||0,updated_at:new Date().toISOString()}).eq("id",currentUser.id);
+      }catch(e){console.error("Quiz cloud sync error",e);}
+    };
+  }
+  if(originalRecordStudy && window.projectFluidV3){
+    window.projectFluidV3.recordStudy=async function(minutes){
+      originalRecordStudy(minutes);
+      if(!supabaseClient || !currentUser) return;
+      try{
+        const d=window.projectFluidV3.data;
+        await supabaseClient.from("profiles").update({total_study_minutes:Number(d.studyMinutes)||0,xp:Number(d.xp)||0,level:Number(d.level)||1,streak:Number(d.streak)||0,updated_at:new Date().toISOString()}).eq("id",currentUser.id);
+      }catch(e){console.error("Study cloud sync error",e);}
+    };
+  }
+  initV4Auth();
 })();

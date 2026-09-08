@@ -253,3 +253,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 body.v3-toast-ready .toast{position:fixed;right:1rem;bottom:1rem;z-index:1200;padding:.9rem 1rem;border-radius:14px;border:1px solid var(--border-color,#ffffff18);background:var(--bg-color,#111);box-shadow:0 15px 50px rgba(0,0,0,.25)}
 @media(max-width:900px){.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-welcome{grid-column:span 2}.dashboard-progress,.dashboard-achievements,.dashboard-today,.dashboard-actions{grid-column:span 2}}
 @media(max-width:600px){.dashboard-grid{grid-template-columns:1fr}.dashboard-welcome,.dashboard-progress,.dashboard-achievements,.dashboard-today,.dashboard-actions{grid-column:span 1}.dashboard-welcome{align-items:flex-start;gap:1rem}.level-orb{width:78px;height:78px}.quick-actions{grid-template-columns:1fr}}
+
+
+/* V4 Account & Premium UI */
+.account-nav{display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:10px}
+.account-button{border:1px solid var(--border-color,rgba(255,255,255,.14));background:var(--card-bg,rgba(255,255,255,.06));color:inherit;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer}
+.account-status{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem;opacity:.8}
+.auth-panel{max-width:460px}
+.auth-form{display:grid;gap:14px;margin-top:20px}
+.auth-form label{display:grid;gap:7px;font-weight:600;font-size:.9rem}
+.auth-form input{width:100%;box-sizing:border-box;padding:13px 14px;border-radius:12px;border:1px solid var(--border-color,rgba(255,255,255,.14));background:var(--bg-color,rgba(0,0,0,.2));color:inherit}
+.account-premium-card{display:flex;justify-content:space-between;align-items:center;padding:18px;border:1px solid var(--border-color,rgba(255,255,255,.14));border-radius:18px;margin:20px 0}
+.account-premium-card strong{display:block;font-size:1.5rem;margin-top:4px}
+.premium-badge{padding:7px 11px;border-radius:999px;font-size:.75rem;font-weight:800;letter-spacing:.08em;background:rgba(255,255,255,.08)}
+.premium-badge.premium{background:linear-gradient(135deg,#f5c542,#ff8a00);color:#111}
+.account-actions{display:flex;gap:10px;flex-wrap:wrap}
+.cloud-synced{background:rgba(74,222,128,.12)!important}
+@media(max-width:760px){.account-nav{margin-left:0}.account-status{display:none}.account-button{padding:8px 11px}.account-actions>*{flex:1}}
