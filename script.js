@@ -139,7 +139,11 @@ function startTimer() {
   timerRunning = true;
   timerInterval = setInterval(() => {
     if (timerSeconds > 0) { timerSeconds--; updateTimerDisplay(); }
-    else { stopTimer(); setTimerMode(timerMode === "study" ? "break" : "study"); }
+    else {
+      stopTimer();
+      if (timerMode === "study" && window.projectFluidV3?.recordStudy) window.projectFluidV3.recordStudy(25);
+      setTimerMode(timerMode === "study" ? "break" : "study");
+    }
   }, 1000);
 }
 startTimerButton?.addEventListener("click", startTimer);
@@ -436,6 +440,7 @@ function finishQuiz(timeUp) {
   bestScoreElement.textContent = `${best}%`;
   quizStreakElement.textContent = streak;
   updateProgressStats();
+  if (window.projectFluidV3?.recordQuiz) window.projectFluidV3.recordQuiz(percentage, quizSubject);
   quizReview.classList.add("hidden");
   quizReview.innerHTML = "";
 }
@@ -740,37 +745,18 @@ console.log("Project Fluid V2 loaded successfully.");
   }
 
   // Expose helpers so the existing V2 quiz/timer code can award XP without being rewritten.
-  window.projectFluidV3 = {data, save, awardXP, renderDashboard, updateAchievements};
+  window.projectFluidV3 = {data, save, awardXP, recordQuiz, recordStudy, renderDashboard, updateAchievements};
 
-  // Capture quiz completion events from existing buttons/results with a light DOM observer.
-  let lastQuizText="";
-  const observeResults = () => {
-    const result = $v3("#quizResults") || $v3("#quizComplete") || $v3(".quiz-results");
-    if(!result) return;
-    const text=result.textContent.trim();
-    if(text && text!==lastQuizText && /\b\d+\s*\/\s*\d+\b|\b100%\b/.test(text)){
-      lastQuizText=text;
-      const m=text.match(/(\d+)\s*\/\s*(\d+)/);
-      if(m){
-        const score=Math.round(Number(m[1])/Number(m[2])*100);
-        const subject=($v3("#quizSubject")?.value || document.querySelector(".subject-button.active")?.textContent || "Quiz").trim();
-        data.quizHistory.push({score,subject,date:todayKey()});
-        awardXP(25 + (score===100?25:0), "Quiz completed");
-      }
-    }
-  };
-  new MutationObserver(observeResults).observe(document.body,{subtree:true,childList:true,characterData:true});
-
-  // Try to count completed focus sessions from common timer completion text.
-  let timerSeen=false;
-  const observer2=new MutationObserver(()=>{
-    const body=document.body.textContent||"";
-    if(/time'?s up|session complete|focus complete/i.test(body) && !timerSeen){
-      timerSeen=true; data.studyMinutes += 25; awardXP(10,"Focus session");
-      setTimeout(()=>timerSeen=false,4000);
-    }
-  });
-  observer2.observe(document.body,{subtree:true,childList:true,characterData:true});
+  // Direct integration hooks are used instead of DOM mutation observers.
+  // This avoids duplicate XP/history entries and is more reliable on GitHub Pages.
+  function recordQuiz(score, subject){
+    data.quizHistory.push({score:Number(score)||0, subject:subject||"Quiz", date:todayKey()});
+    awardXP(25 + (Number(score)===100 ? 25 : 0), "Quiz completed");
+  }
+  function recordStudy(minutes){
+    data.studyMinutes += Number(minutes)||0;
+    awardXP(10, "Focus session");
+  }
 
   // Daily reminder.
   function reminderStatus(){
