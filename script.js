@@ -280,6 +280,8 @@ const bestScoreElement = $("#bestScore");
 const quizStreakElement = $("#quizStreak");
 const quizReview = $("#quizReview");
 
+startQuizButton?.addEventListener("click", startQuiz);
+
 function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5);
 }
