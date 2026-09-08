@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Fluid — Student Tools & Study Hub</title>
+    <meta name="description" content="Project Fluid brings student tools, quizzes, study planning, notes, flashcards and progress tracking together in one place.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="liquid-background" aria-hidden="true">
+    <div class="blob blob-one"></div><div class="blob blob-two"></div><div class="blob blob-three"></div>
+</div>
+
+<header class="navbar">
+    <a href="#home" class="logo">PROJECT<span>FLUID</span></a>
+    <nav class="nav-links">
+        <a href="#home">Home</a><a href="#tools">Tools</a><a href="#learn">Learn</a><a href="#plan">Plan</a><a href="#progress">Progress</a>
+    </nav>
+    <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
+</header>
+
+<main>
+<section id="home" class="hero">
+    <div class="hero-content">
+        <p class="eyebrow">YOUR STUDENT COMMAND CENTER</p>
+        <h1>Study smarter.<br><span>Do more.</span></h1>
+        <p class="hero-text">Calculate grades, focus, prepare for exams, test yourself, plan your work and keep your progress moving — all in one place.</p>
+        <div class="hero-buttons">
+            <a href="#tools" class="btn btn-primary">Explore tools <span>→</span></a>
+            <a href="#learn" class="btn btn-secondary">Take a quiz</a>
+        </div>
+    </div>
+    <div class="hero-orb" aria-hidden="true"><div class="orb-inner"></div></div>
+</section>
+
+<section id="tools" class="tools-section">
+    <div class="section-heading">
+        <p class="eyebrow">YOUR TOOLKIT</p>
+        <h2>Everything you need<br><span>in one place.</span></h2>
+        <p>Fast, useful tools for the everyday parts of student life.</p>
+    </div>
+
+    <article class="tool-card">
+        <div class="tool-info"><span class="tool-number">01</span><h3>GPA Calculator</h3><p>Calculate your GPA using courses, credit hours and grades.</p></div>
+        <div class="tool-interface">
+            <div class="interface-header"><strong>GPA Calculator</strong><span id="gpaResult">—</span></div>
+            <div id="courseList"><div class="course-row">
+                <input type="text" placeholder="Course name" class="course-name">
+                <input type="number" placeholder="Credits" min="0" step="0.5" class="course-credit">
+                <select class="course-grade"><option value="">Grade</option><option value="4">A</option><option value="3.7">A-</option><option value="3.3">B+</option><option value="3">B</option><option value="2.7">B-</option><option value="2.3">C+</option><option value="2">C</option><option value="1.7">C-</option><option value="1.3">D+</option><option value="1">D</option><option value="0">F</option></select>
+            </div></div>
+            <div class="tool-actions"><button id="addCourse" class="small-btn">+ Add course</button><button id="calculateGPA" class="small-btn primary-small">Calculate GPA</button></div>
+        </div>
+    </article>
+
+    <article class="tool-card reverse">
+        <div class="tool-info"><span class="tool-number">02</span><h3>Grade Calculator</h3><p>Quickly calculate your percentage and letter grade.</p></div>
+        <div class="tool-interface">
+            <div class="input-group"><label for="marksObtained">Marks obtained</label><input id="marksObtained" type="number" placeholder="e.g. 85"></div>
+            <div class="input-group"><label for="totalMarks">Total marks</label><input id="totalMarks" type="number" placeholder="e.g. 100"></div>
+            <button id="calculateGrade" class="full-btn">Calculate grade</button>
+            <div id="gradeResult" class="result-box">Enter your marks above.</div>
+        </div>
+    </article>
+
+    <article class="tool-card">
+        <div class="tool-info"><span class="tool-number">03</span><h3>Study Timer</h3><p>Focus for 25 minutes, take a short break, and keep moving.</p></div>
+        <div class="tool-interface timer-interface">
+            <div class="timer-mode"><button id="studyMode" class="mode active">Study</button><button id="breakMode" class="mode">Break</button></div>
+            <div id="timerDisplay" class="timer-display">25:00</div>
+            <div class="timer-controls"><button id="startTimer" class="full-btn">Start</button><button id="pauseTimer" class="small-btn">Pause</button><button id="resetTimer" class="small-btn">Reset</button></div>
+        </div>
+    </article>
+
+    <article class="tool-card reverse">
+        <div class="tool-info"><span class="tool-number">04</span><h3>Exam Countdown</h3><p>Set your exam date and keep track of exactly how much time remains.</p></div>
+        <div class="tool-interface">
+            <div class="input-group"><label for="examName">Exam name</label><input id="examName" type="text" placeholder="e.g. Mathematics"></div>
+            <div class="input-group"><label for="examDate">Exam date</label><input id="examDate" type="datetime-local"></div>
+            <button id="startCountdown" class="full-btn">Start countdown</button>
+            <div id="countdownResult" class="countdown-result"><div><strong id="days">0</strong><span>Days</span></div><div><strong id="hours">0</strong><span>Hours</span></div><div><strong id="minutes">0</strong><span>Minutes</span></div><div><strong id="seconds">0</strong><span>Seconds</span></div></div>
+        </div>
+    </article>
+</section>
+
+<section id="learn" class="feature-section">
+    <div class="section-heading">
+        <p class="eyebrow">LEARN</p>
+        <h2>Turn spare minutes<br><span>into progress.</span></h2>
+        <p>Test yourself, build streaks and discover which subjects need more attention.</p>
+    </div>
+
+    <div class="quiz-shell">
+        <div id="quizSetup" class="quiz-setup">
+            <div class="quiz-intro">
+                <span class="tool-number">05</span>
+                <h3>Quiz Center</h3>
+                <p>Choose a subject and challenge yourself with 10 multiple-choice questions.</p>
+            </div>
+
+            <div class="quiz-setting">
+                <span class="setting-label">Subject</span>
+                <div class="choice-grid" id="subjectChoices">
+                    <button class="choice active" data-subject="Mathematics">Mathematics</button>
+                    <button class="choice" data-subject="Physics">Physics</button>
+                    <button class="choice" data-subject="Chemistry">Chemistry</button>
+                    <button class="choice" data-subject="Biology">Biology</button>
+                    <button class="choice" data-subject="English">English</button>
+                    <button class="choice" data-subject="Computer Science">Computer Science</button>
+                </div>
+            </div>
+
+            <div class="quiz-setting">
+                <span class="setting-label">Difficulty target</span>
+                <div class="choice-grid difficulty-grid" id="difficultyChoices">
+                    <button class="choice active" data-difficulty="Mixed">Mixed</button>
+                    <button class="choice" data-difficulty="Easy">Easy</button>
+                    <button class="choice" data-difficulty="Medium">Medium</button>
+                    <button class="choice" data-difficulty="Hard">Hard</button>
+                </div>
+            </div>
+
+            <button id="startQuiz" class="full-btn">Start 10-question quiz →</button>
+            <p class="quiz-note">Your best score and streak are saved on this device.</p>
+        </div>
+
+        <div id="quizGame" class="quiz-game hidden" aria-live="polite">
+            <div class="quiz-topline">
+                <span id="quizSubjectLabel">Mathematics</span>
+                <span id="quizTimer">10:00</span>
+            </div>
+            <div class="quiz-progress"><span id="quizProgressBar"></span></div>
+            <div class="quiz-question-meta"><span id="quizQuestionCount">Question 1 of 10</span><span id="quizScoreLive">0 correct</span></div>
+            <h3 id="quizQuestion"></h3>
+            <div id="quizOptions" class="quiz-options"></div>
+            <div id="quizFeedback" class="quiz-feedback" aria-live="polite"></div>
+            <button id="nextQuestion" class="full-btn hidden">Next question →</button>
+        </div>
+
+        <div id="quizResults" class="quiz-results hidden">
+            <p class="eyebrow">QUIZ COMPLETE</p>
+            <div id="quizScore" class="big-score">0/10</div>
+            <h3 id="quizMessage">Keep going.</h3>
+            <p id="quizStats" class="result-subtext"></p>
+            <div class="result-mini-grid">
+                <div><strong id="bestScore">0%</strong><span>Best score</span></div>
+                <div><strong id="quizStreak">0</strong><span>Day streak</span></div>
+            </div>
+            <div class="result-actions">
+                <button id="retryQuiz" class="full-btn">Try again</button>
+                <button id="reviewQuiz" class="small-btn">Review answers</button>
+                <button id="newQuiz" class="small-btn">Choose another quiz</button>
+            </div>
+            <div id="quizReview" class="quiz-review hidden"></div>
+        </div>
+    </div>
+</section>
+
+<section id="plan" class="feature-section">
+    <div class="section-heading">
+        <p class="eyebrow">PLAN</p>
+        <h2>Know what to do<br><span>next.</span></h2>
+        <p>Keep assignments, study tasks and important dates in one simple workspace.</p>
+    </div>
+
+    <div class="planner-grid">
+        <div class="planner-card">
+            <div class="card-heading"><div><span class="tool-number">06</span><h3>Study Planner</h3></div><span class="live-badge">SAVED LOCALLY</span></div>
+            <form id="taskForm" class="task-form">
+                <input id="taskInput" type="text" placeholder="Add a study task..." maxlength="100" required>
+                <input id="taskDate" type="date" aria-label="Task due date">
+                <select id="taskPriority" aria-label="Task priority"><option value="Normal">Normal</option><option value="High">High</option><option value="Low">Low</option></select>
+                <button class="full-btn" type="submit">Add task</button>
+            </form>
+            <div id="taskList" class="task-list"></div>
+            <button id="clearCompleted" class="text-btn">Clear completed</button>
+        </div>
+
+        <div class="planner-card">
+            <div class="card-heading"><div><span class="tool-number">07</span><h3>Quick Notes</h3></div></div>
+            <form id="noteForm" class="note-form">
+                <input id="noteTitle" type="text" placeholder="Note title" maxlength="60" required>
+                <textarea id="noteBody" placeholder="Write a quick study note..." rows="5" maxlength="500" required></textarea>
+                <button class="full-btn" type="submit">Save note</button>
+            </form>
+            <div id="notesList" class="notes-list"></div>
+        </div>
+    </div>
+
+    <div class="flashcard-card">
+        <div class="card-heading"><div><span class="tool-number">08</span><h3>Flashcards</h3></div><span class="live-badge">BETA</span></div>
+        <p class="muted-copy">Create a quick deck directly in your browser and flip cards while revising.</p>
+        <div class="flashcard-builder">
+            <input id="flashFront" type="text" placeholder="Front — e.g. What is photosynthesis?">
+            <input id="flashBack" type="text" placeholder="Back — e.g. Process plants use to convert light into energy.">
+            <button id="addFlashcard" class="small-btn primary-small">Add card</button>
+        </div>
+        <div id="flashcardDeck" class="flashcard-deck"></div>
+    </div>
+</section>
+
+<section id="progress" class="progress-section">
+    <div class="section-heading centered">
+        <p class="eyebrow">YOUR PROGRESS</p>
+        <h2>Small wins<br><span>add up.</span></h2>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card"><span>QUIZ BEST</span><strong id="progressBest">0%</strong><p>Your highest quiz percentage on this device.</p></div>
+        <div class="stat-card"><span>QUIZ STREAK</span><strong id="progressStreak">0</strong><p>Consecutive days you've completed a quiz.</p></div>
+        <div class="stat-card"><span>TASKS DONE</span><strong id="progressTasks">0</strong><p>Study tasks completed in your planner.</p></div>
+        <div class="stat-card"><span>NOTES</span><strong id="progressNotes">0</strong><p>Quick notes saved for revision.</p></div>
+    </div>
+</section>
+
+<section class="why-section">
+    <div class="section-heading centered"><p class="eyebrow">WHY PROJECT FLUID</p><h2>Less friction.<br><span>More studying.</span></h2></div>
+    <div class="benefits">
+        <div class="benefit"><span>01</span><h3>Simple</h3><p>Open a tool and get moving without complicated setup.</p></div>
+        <div class="benefit"><span>02</span><h3>Fast</h3><p>Calculations, quizzes and planning happen directly in your browser.</p></div>
+        <div class="benefit"><span>03</span><h3>Personal</h3><p>Your planner, notes and scores stay saved on your device.</p></div>
+    </div>
+</section>
+
+<section class="final-cta">
+    <div class="cta-liquid"></div>
+    <p class="eyebrow">READY?</p>
+    <h2>Make your next<br>study session count.</h2>
+    <a href="#learn" class="btn btn-primary">Take a quiz →</a>
+</section>
+</main>
+
+<footer>
+    <div class="footer-brand">PROJECT<span>FLUID</span></div>
+    <p>Your student command center.</p>
+    <div class="footer-links"><a href="#home">Home</a><a href="#tools">Tools</a><a href="#learn">Learn</a><a href="#plan">Plan</a><a href="about.html">About</a></div>
+    <p class="copyright">© 2026 Project Fluid. All rights reserved.</p>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
